@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Knight's Tour Problem Solver</title>
+  <meta name="description" content="Solve the Knight's Tour problem interactively using Backtracking and Genetic Algorithm on any board size."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-icon">♞</div>
+      <div>
+        <h1>Knight's Tour Solver</h1>
+        <p class="subtitle">Backtracking &amp; Genetic Algorithm</p>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Control Panel -->
+      <aside class="control-panel glass">
+        <section class="control-section">
+          <h2 class="section-title">Board Setup</h2>
+
+          <div class="control-group">
+            <label for="boardSize">Board Size (n × n)</label>
+            <div class="input-row">
+              <input type="range" id="boardSizeSlider" min="5" max="12" value="8" step="1"/>
+              <input type="number" id="boardSize" min="5" max="12" value="8" class="num-input"/>
+            </div>
+            <span class="hint">Minimum 5 × 5</span>
+          </div>
+
+          <div class="control-group">
+            <label for="startRow">Start Position</label>
+            <div class="start-pos-row">
+              <div class="pos-field">
+                <span>Row</span>
+                <input type="number" id="startRow" min="0" value="0" class="num-input small"/>
+              </div>
+              <div class="pos-field">
+                <span>Col</span>
+                <input type="number" id="startCol" min="0" value="0" class="num-input small"/>
+              </div>
+            </div>
+            <span class="hint">0-indexed from top-left</span>
+          </div>
+        </section>
+
+        <section class="control-section">
+          <h2 class="section-title">Algorithm</h2>
+          <div class="algo-tabs" role="tablist">
+            <button class="algo-tab active" data-algo="backtracking" role="tab" aria-selected="true" id="tab-bt">
+              <span class="tab-icon">🔍</span>
+              <span>Backtracking</span>
+            </button>
+            <button class="algo-tab" data-algo="genetic" role="tab" aria-selected="false" id="tab-ga">
+              <span class="tab-icon">🧬</span>
+              <span>Genetic</span>
+            </button>
+          </div>
+
+          <!-- Backtracking options -->
+          <div class="algo-options" id="opts-backtracking">
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="useWarnsdorff" checked/>
+                Use Warnsdorff's Heuristic
+              </label>
+              <span class="hint">Drastically reduces backtracking</span>
+            </div>
+          </div>
+
+          <!-- Genetic Algorithm options -->
+          <div class="algo-options hidden" id="opts-genetic">
+            <div class="control-group">
+              <label for="popSize">Population Size</label>
+              <input type="number" id="popSize" min="20" max="500" value="100" class="num-input"/>
+            </div>
+            <div class="control-group">
+              <label for="maxGen">Max Generations</label>
+              <input type="number" id="maxGen" min="50" max="5000" value="500" class="num-input"/>
+            </div>
+            <div class="control-group">
+              <label for="mutRate">Mutation Rate</label>
+              <input type="range" id="mutRate" min="0.01" max="0.5" step="0.01" value="0.1"/>
+              <span class="mut-val">0.10</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="control-section">
+          <h2 class="section-title">Animation</h2>
+          <div class="control-group">
+            <label for="speed">Speed</label>
+            <input type="range" id="speed" min="1" max="10" value="5"/>
+            <div class="speed-labels"><span>Slow</span><span>Fast</span></div>
+          </div>
+        </section>
+
+        <div class="btn-row">
+          <button id="startBtn" class="btn btn-primary">▶ Start</button>
+          <button id="resetBtn" class="btn btn-secondary">↺ Reset</button>
+        </div>
+
+        <div id="errorMsg" class="error-msg hidden"></div>
+      </aside>
+
+      <!-- Board + Stats -->
+      <div class="board-area">
+        <div class="stats-bar glass">
+          <div class="stat-item">
+            <span class="stat-label">Algorithm</span>
+            <span class="stat-value" id="statAlgo">Backtracking</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Board</span>
+            <span class="stat-value" id="statBoard">8 × 8</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Moves</span>
+            <span class="stat-value" id="statMoves">0</span>
+          </div>
+          <div class="stat-item" id="statBackItem">
+            <span class="stat-label">Backtracks</span>
+            <span class="stat-value" id="statBack">0</span>
+          </div>
+          <div class="stat-item" id="statGenItem" style="display:none">
+            <span class="stat-label">Generation</span>
+            <span class="stat-value" id="statGen">0</span>
+          </div>
+          <div class="stat-item" id="statFitItem" style="display:none">
+            <span class="stat-label">Best Fitness</span>
+            <span class="stat-value" id="statFit">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Status</span>
+            <span class="stat-value status-badge" id="statStatus">Idle</span>
+          </div>
+        </div>
+
+        <!-- Fitness chart (GA only) -->
+        <div id="gaPanel" class="ga-panel glass hidden">
+          <div class="ga-header">
+            <span>Genetic Algorithm Progress</span>
+            <span id="gaTarget"></span>
+          </div>
+          <div class="fitness-bar-container">
+            <div class="fitness-bar-track">
+              <div class="fitness-bar-fill" id="fitnessFill"></div>
+            </div>
+            <span class="fitness-pct" id="fitnessPct">0%</span>
+          </div>
+          <div class="generation-log" id="genLog"></div>
+        </div>
+
+        <div class="board-container">
+          <div id="board" class="board"></div>
+          <div id="overlay" class="board-overlay hidden">
+            <div class="overlay-content">
+              <div class="overlay-icon" id="overlayIcon">✓</div>
+              <div class="overlay-msg" id="overlayMsg">Tour Complete!</div>
+              <div class="overlay-sub" id="overlaySub"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-cell start"></div> Start</div>
+          <div class="legend-item"><div class="legend-cell current"></div> Knight</div>
+          <div class="legend-item"><div class="legend-cell visited"></div> Visited</div>
+          <div class="legend-item"><div class="legend-cell unvisited"></div> Unvisited</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/board.js"></script>
+  <script src="js/backtracking.js"></script>
+  <script src="js/genetic.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
